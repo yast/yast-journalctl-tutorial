@@ -1,0 +1,63 @@
+---
+layout: default
+---
+
+<h2>Hello world</h2>
+
+<h3>A basic client as a first step</h3>
+<p>
+Usually, first step when creating a GUI app is to draw some mockups. It can be
+done with any tool (including good old paper + pencil), but you'll have to
+consider the ncurses interface, so maybe using libyui itself to write the mockup
+is not a bad idea.
+</p>
+<p>
+As explained in "YaST architecture" at http://yast.github.io/documentation.html,
+executing YaST means actually calling a YaST client. So let's write a client
+that will draw our mockup.
+</p>
+<h3>Checkout the initial mockup</h3>
+First, checkout the initial commit of the repo.
+{% highlight bash %}
+git checkout hello_world
+{% endhighlight %}
+
+<h3>Browsing the code</h3>
+<p>
+The repo now contains just a 'src' directory to mimic the structure described in "YaST code
+organization description" at http://yast.github.io/documentation.html
+</p>
+<p>
+Let's take a look to /clients/mockup.rb and
+lib/systemd_journal/mockup_dialog.rb.
+Brief explanation of the code.
+</p>
+
+<h3>Running the code</h3>
+<p>
+You could be tempted to use rake run, but it will not work because there is no
+Rakefile. Don't worry. Let's forget about the magic for now. And let's run the
+mockup client manually.
+</p>
+{% highlight bash %}
+Y2DIR=src/ /usr/sbin/yast2 mockup
+{% endhighlight %}
+
+<p>
+The only possible interaction is closing. Let's also take a look to ~/.y2log.
+Now. Let's take a look to how it looks in ncurses (press 'esc' to exit)
+</p>
+
+{% highlight bash %}
+Y2DIR=src/ /usr/sbin/yast2 --ncurses mockup
+{% endhighlight %}
+
+<p>
+You can see the debugging output again in  ~/.y2log
+</p>
+
+<h3>Rejoice!</h3>
+<p>
+Celebrate your first YaST module. Once you are done with celebration, proceed to <a
+  href="step2.html">the second step</a>.
+</p>

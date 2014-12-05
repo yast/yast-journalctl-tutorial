@@ -1,0 +1,55 @@
+---
+layout: default
+---
+
+<h2>Welcome to the tutorial</h2>
+
+<h3>The goal</h3>
+
+No installer, just a simple module. More focused on learning the tools and the
+architecture.
+You are expected to be proficient with Ruby or at least to be able to follow
+some written code.
+
+<h3>Setting up the environment</h3>
+Everything detailed in the "contributing" section of http://yast.github.io
+
+You are expected to use a recent version of openSUSE. Tumbleweed would be even
+better.
+
+{% highlight bash %}
+zypper install packages-needed-but-not-installed-by-default
+{% endhighlight %}
+
+
+<h3>The method</h3>
+
+Creating an example module called yast-journalctl which resembles a lot to
+yast-journal.
+In fact, it reflects my own learning process developing yast-journal as my first
+module.
+
+Every step is a tag in this repository, so intead of a text with a lot of
+chunks of code, you can explore yourself.
+
+You are expected to be proficient with git. If it's not the case, it's better to
+not change anything, just use your copy to read and create your files everywhere
+else.
+
+As a first step, clone the repo.
+{% highlight bash %}
+git clone bla
+{% endhighlight %}
+
+Right after doing this, you can already see how the final result will loook
+like.
+
+{% highlight bash %}
+cd bla
+rake run
+{% endhighlight %}
+
+<h3>Let's start</h3>
+
+If you were able to execute the module, you are ready to proceed to the next
+step by clicking on <a href="step1.html">Step 1</a>.
