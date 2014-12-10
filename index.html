@@ -5,51 +5,84 @@ layout: default
 <h2>Welcome to the tutorial</h2>
 
 <h3>The goal</h3>
-
-No installer, just a simple module. More focused on learning the tools and the
-architecture.
-You are expected to be proficient with Ruby or at least to be able to follow
-some written code.
+<p>
+The goal of this tutorial is to present a very simple example of a YaST module
+developed from scratch. The document is focused in the tools and the overall
+architecture used for such a simple development. Many other interesting YaST
+subjects, like modifying the installer or accessing complex configurations in
+the underlying system, are intentionally left out.
+</p>
+<p>
+You, as a reader, are expected to be familiar with the Ruby programming language
+at least to a certain degree, since no general Ruby subjects will be explained.
+</p>
 
 <h3>Setting up the environment</h3>
-Everything detailed in the "contributing" section of http://yast.github.io
 
-You are expected to use a recent version of openSUSE. Tumbleweed would be even
-better.
+<p>
+This tutorial is better followed using a recent version of openSUSE (tested in
+openSUSE 13.2). Of course, using openSUSE Tumbleweed would be even better, since
+it's the recommended development environment for YaST.
+</p>
+<p>
+Everything needed in order to set up the YaST development environment is
+detailed in the &quot;contributing&quot; section of the
+<a href="YaST development home page">http://yast.github.io</a>. In a recent
+openSUSE, it's as simple as:
+</p>
 
 {% highlight bash %}
 zypper install packages-needed-but-not-installed-by-default
 {% endhighlight %}
 
-
 <h3>The method</h3>
 
-Creating an example module called yast-journalctl which resembles a lot to
-yast-journal.
-In fact, it reflects my own learning process developing yast-journal as my first
-module.
+<p>
+This document is a step by step tutorial to develop a module called
+yast-journalctl which resembles a lot the already existing
+<a href="https://github.com/ancorgs/yast-journal">yast-journal</a>. In fact,
+this tutorial reflects closely the author's own learning experience while
+developing yast-journal as his first YaST module. From that point of view, this
+is a tutorial for newbies written by a newbie.
+</p>
+<p>
+All the example code and files used in the tutorial are available at
+<a href="https://github.com/ancorgs/yast-journalctl-tutorial">this
+GitHub repository</a> and organized following the learning timeline.
+The tutorial is divided into small steps and every step correspond with a tag in
+the repository's history, so instead of reading some chunks of code embedded in
+the tutorial's text, you can actually go back and forward in time and
+freely explore the whole tree with your favourite source code editor.
+</p>
+<p>
+If you are proficient with git, feel free to play with the repository. Otherwise
+it's better to do not change anything in your local copy of the repository and
+just use the provided commands to browse the history while writing your own code
+in a different clean directory.
+</p>
 
-Every step is a tag in this repository, so intead of a text with a lot of
-chunks of code, you can explore yourself.
-
-You are expected to be proficient with git. If it's not the case, it's better to
-not change anything, just use your copy to read and create your files everywhere
-else.
-
-As a first step, clone the repo.
+<h3>A look into the future</h3>
+<p>
+As a first step, simply clone the repository to have your own local copy.
+</p>
 {% highlight bash %}
-git clone bla
+git clone https://github.com/ancorgs/yast-journalctl-tutorial
 {% endhighlight %}
-
-Right after doing this, you can already see how the final result will loook
-like.
-
+<p>
+Right after cloning, you can already see how the final result will look
+like once you have finished the tutorial.
+</p>
 {% highlight bash %}
-cd bla
+cd yast-journalctl-tutorial
 rake run
 {% endhighlight %}
+<p>
+If it shows too few journal entries for your taste (or even none), try to
+run it again with the root user, who has full access to the systemd journal.
+</p>
 
 <h3>Let's start</h3>
-
+<p>
 If you were able to execute the module, you are ready to proceed to the next
-step by clicking on <a href="step1.html">Step 1</a>.
+step by clicking on <a href="step1.html">Step 1/7</a>.
+</p>
