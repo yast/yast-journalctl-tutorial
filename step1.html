@@ -40,7 +40,7 @@ You will find that directory in every YaST module and you will soon find why.
 <p>
 Inside that directory there are only two files: &quot;clients/mockup.rb&quot;
 and &quot;lib/systemd_journal/mockup_dialog.rb&quot;. The first one is mainly
-a Ruby script. Whatever code is there it will be executed right away when
+a Ruby script. Whatever code is there, it will be executed right away when
 calling the client. Several old YaST modules contain clients with the
 functionality implemented inline. This is now considered harmfull since it makes
 harder to use automatic test tools. The preferred approach is to encapsulate the
@@ -60,32 +60,144 @@ mockup_dialog.rb, starting with the first two lines.
 require "yast"
 Yast.import "UI"
 {% endhighlight %}
+<p>
+The first line give you access to all the goodies from
+<a href="http://www.rubydoc.info/github/yast/yast-ruby-bindings/">the
+YaST Ruby bindings</a>, which includes several cool features that will be used
+in this tutorial. To fully understand the second line, you need to know what a
+YaST module is. As stated in the architecture document from the
+<a href="http://yast.github.io/documentation.html">official YaST
+documentation</a>, a module is a YaST component encapsulating functionality
+related to a specific area and offering this functionality to other components
+through a YCP interface. The method Yast.import loads one of those components
+and creates a Ruby object for it in the Yast namespace. That object can then be
+used to access the methods and variables provided by the YCP interface of that
+module from your Ruby code, no matter in which language the module is written.
+One final note, if the module is implemented in Ruby then Yast.import is almost
+equivalent to a good old Ruby's &quot;require&quot;, which means that you'll
+have full access to the Ruby class defined in the module, not only to methods
+published through its YCP interface. The code above imports the UI module, which
+is not implemented in Ruby and thus will be used through its published YCP
+interface.
+</p>
+<p>
+In the following lines we simply define a Journalctl namespace (for hygienic
+reasons) and our class including several mixins provided by the YaST Ruby
+bindings.
+</p>
+{% highlight ruby %}
+module Journalctl
+  class MockupDialog
+  
+    include Yast::UIShortcuts
+    include Yast::I18n
+    include Yast::Logger
+{% endhighlight %}
+<p>
+The first mixin deserves a specific paragraph (see below), the other two should
+be obvious enough. Yast::I18n provides methods for internationalization following
+the gettext nomenclature and Yast::Logger provides a &quot;log&quot; method
+returning an object that can be used to write content in the YaST logs.
+</p>
+<p>
+The first mixin provides several methods to increase the
+readibility of the code used to define the user interface, but to fully
+understand how it works it's convenient to understand the YCP's concept of
+&quot;term&quot;. A term is one of the basic data types in the YaST Components
+Protocol and the main mechanism to defer the execution of a piece of code. 
+The definition of the UI is done using a tree-like structure of YCP terms where
+each term represents a function call. For example, the following ruby code
+defines a tree of terms that will be translated to the corresponding calls
+to libyui functions when needed.
+</p>
+{% highlight ruby %}
+content = Yast::Term.new(:VBox,
+               Yast::Term.new(:Label, "Say hello..."),
+               Yast::Term.new(:PushButton,
+                               Yast::Term.new(:Id, :hello),
+                               "now!"))
+{% endhighlight %}
+<p>
+The code above defines a vertical box which contains a label and a button, with
+the button being identified by the id :hello. Too much code (and too ugly) for
+such a small output. Including the UIShorcuts mixin the same code can be written
+as:
+</p>
+{% highlight ruby %}
+include Yast::UIShortcuts
+content = VBox(
+  Label("Say hello..."),
+  PushButton(Id(:hello), "now!")
+)
+{% endhighlight %}
+<p>
+Much more readable and clean. The only drawback is that now is easier to forget
+that the &quot;content&quot; variable will not contain the result of calling the
+VBox function of libyui, but a tree structure with the function calls (function
+names and corresponding arguments) that will be performed while actually drawing
+the interface.
+</p>
+<p>
+And last but not least, the MockupDialog contains the &quot;run&quot; method
+which relies on several functions from the UI module and the included mixins to
+open a dialog, capture the user's input, write that input to the YaST log and
+close the dialog. In this example the OpenDialog function receives a term with
+the options and another term containing the tree of widgets to draw (which in
+this case is a tiny tree with just one label as the only node).
+</p>
+{% highlight ruby %}
+def run
+
+  Yast::UI.OpenDialog(
+    Opt(:decorated, :defaultsize),
+    Label(_("Hello world!"))
+  )
+
+  input = Yast::UI.UserInput
+
+  log.info "Received #{input}"
+
+  Yast::UI.CloseDialog
+end
+{% endhighlight %}
 
 <h3>Running the code</h3>
 <p>
-You could be tempted to use rake run, but it will not work because there is no
-Rakefile. Don't worry. Let's forget about the magic for now. And let's run the
-mockup client manually.
+Sure you cannot wait to see the code in action and most likely you have already
+tried to run it before reading this text. Your first attempt would probably be
+to use the &quot;rake run&quot; task that we already used during the
+introduction. But that will not work because we have not created a proper
+Rakefile file yet. So let's forget about the magic for a while and
+let's run our mockup client manually by just running this from the root of our
+repository:
 </p>
 {% highlight bash %}
 Y2DIR=src/ /usr/sbin/yast2 mockup
 {% endhighlight %}
-
 <p>
-The only possible interaction is closing. Let's also take a look to ~/.y2log.
-Now. Let's take a look to how it looks in ncurses (press 'esc' to exit)
+Pretty straighforward, just like invoking any YaST client installed in the
+system but using the Y2DIR environment variable to tell YaST to look first into
+our src directory when looking for YaST components.
 </p>
-
+<p>
+Right now, the only possible interaction with our client is closing the dialog.
+While doing it, take a look to the file ~/.y2log (or /var/log/YaST/y2log if you
+are running the client as the root user) to see what is happening and to
+check that our printed message is there.
+</p>
+<p>
+Let's also take a look to how it looks in the ncurses interface.
+</p>
 {% highlight bash %}
 Y2DIR=src/ /usr/sbin/yast2 --ncurses mockup
 {% endhighlight %}
-
 <p>
-You can see the debugging output again in  ~/.y2log
+Press &quot;esc&quot; to close the dialog and exit. You can see the debugging
+output again in ~/.y2log
 </p>
 
 <h3>Rejoice!</h3>
 <p>
-Celebrate your first YaST module. Once you are done with celebration, proceed to <a
-  href="step2.html">the second step</a>.
+Celebrate your first YaST module. Once you are done with celebration, proceed to
+<a href="step2.html">the second step</a>.
 </p>
