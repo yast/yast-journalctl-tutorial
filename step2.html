@@ -6,62 +6,159 @@ layout: default
 
 <h3>Adding some widgets</h3>
 <p>
-The current mockup is not very impressive. Let's start adding some widgets. Our
-first though could be: we need a table to display the log entries, some radio
-buttons to choose the boot, some checkboxes to enable and disable filters,
-a button to refresh the entries table when the filters change and, of course, a
-button to quit. That's already a lot of widgets and some layout. Challenging
-enough. Let's go for it.
+At this point, our first YaST module does not look very impressive. It's time to
+start adding some widgets to it in order to have a proper mockup of the user
+interface. Let's take a look to what we need:
+</p>
+<ul>
+  <li>a table to display the log entries,</li>
+  <li>some radio buttons to select which boot,</li>
+  <li>some checkboxes to enable and disable filters,</li>
+  <li>a button to refresh the entries table when the filters change,</li>
+  <li>last but not least, a button to quit.</li>
+</ul>
+<p>
+That sounds challenging enough for a newbie, let's go for it!
 </p>
 <p>
-Link to UI reference for layout documentation. But nothing better than some
-example code and this url is packed with nice examples
-https://github.com/yast/yast-ycp-ui-bindings/tree/master/examples
+From all the useful links that can be found in the &quot;graphical
+interface&quot; section of
+<a href="http://yast.github.io/documentation.html">the YaST documentation</a>
+homepage, the
+<a href="https://doc.opensuse.org/projects/YaST/openSUSE11.3/tdg/Book-YCPUIlayout.html">UI
+layouts and events guide</a> is probably the best starting point to fully
+understand how everything works and fits. But sometimes the best shortcut for
+learning is some example code and
+<a href="https://github.com/yast/yast-ycp-ui-bindings/tree/master/examples">this
+url</a> is packed with nice examples of the usage of libYUI widgets from Ruby.
 </p>
 
 <h3>Taking a look to the code</h3>
-Feel free to start modifying MockupDialog yourself. When you are done (or right
-away if you are impatient), check the example.
-
+<p>
+After having a look to the abovementioned documentation, feel free to start
+modifying MockupDialog yourself. When you are done (or right away if you are
+impatient), check the proposed example.
+</p>
 {% highlight bash %}
 git checkout first_mockup
 {% endhighlight %}
-
 <p>
-Only mockup_dialog has changed. The run method is not so straightforward now. It
-includes a rudimentary event loop. libyui is not event-driven because is not
-needed in most dialogs, due to the typical YaST application workflow. In the
-next step, we'll see a clear example of such a typical YaST dialog.
+Only one file (mockup_dialog.rb) has changed when compared to the previous git
+tag. The &quot;run&quot; method is now slightly more complex and it includes a
+rudimentary event loop.
 </p>
+{% highlight ruby %}
+# Displays the dialog
+def run
+  return unless create_dialog
+
+  begin
+    return event_loop
+  ensure
+    close_dialog
+  end
+end
+
+# Simple event loop
+def event_loop
+  loop do
+    input = Yast::UI.UserInput
+    if input == :cancel
+      # Break the loop
+      break
+    else
+      log.warn "Unexpected input #{input}"
+    end
+  end
+end
+{% endhighlight %}
+<p>
+For developers coming from more classical GUI toolkits like Gtk or
+Qt, the need to write an event loop can look strange. As opposed to those
+toolkits, libYUI is not event-driven because that approach does not completely
+fit the typical YaST application workflow. Just in case you wonder, in the next
+step of this tutorial a second dialog will be added to our module and then
+you'll see a clear example of such a typical YaST dialog (not event-driven).
+</p>
+<p>
+The other interesting method is &quot;create_dialog&quot; in which the content
+passed to Yast::UI.OpenDialog has changed from the simplistic label of the
+previous example to a full tree of widgets (YaST terms created using the UI
+shortcuts, if you remember) with a vertical box as the root node.
+</p>
+{% highlight ruby %}
+# Draws the dialog
+def create_dialog
+  Yast::UI.OpenDialog(
+    Opt(:decorated, :defaultsize),
+    VBox(
+      # Header
+      Heading(_("Journal entries")),
+
+      # Boot selector
+      Frame(
+        _("Log entries for"),
+        boot_widget
+      ),
+      VSpacing(0.3),
+
+      # Filter checkboxes
+      Frame(
+        _("Filters"),
+        filters_widget
+      ),
+      VSpacing(0.3),
+
+      # Refresh
+      Right(PushButton(Id(:refresh), _("Refresh"))),
+      VSpacing(0.3),
+
+      # Log entries
+      table,
+      VSpacing(0.3),
+
+      # Quit button
+      PushButton(Id(:cancel), Yast::Label.QuitButton)
+    )
+  )
+end
+{% endhighlight %}
 
 <h3>Checking the result in ncurses</h3>
 <p>
-You want to check how it looks, so you execute:
+Reading code is always interesting, but you actually want to check how it looks
+in the user's screen. You already know you can to it with:
 </p>
 {% highlight bash %}
 Y2DIR=src/ /usr/sbin/yast2 mockup
 {% endhighlight %}
-
+<p>And this is what you get.</p>
+<img class="centered" src="assets/images/step2-qt.png">
 <p>
 If you are not specially picky, the graphical interface looks acceptable. It's
-quite cluttered but still usable. Sure there are some layout issues but you
+quite cluttered but still useful. Sure there are some layout issues but you
 think they could be fixed with no much work. After all, you have decided to
 start writing a YaST module from scratch, so sure you are an optimistic person.
 </p>
 <p>
-But there is something you never should forget when developing a YaST module, it
-should work with curses with a resolution of 80 columns and 25 lines.
-So next step is to resize your xterm to a size of 80x25 and run:
+But there is something you should never forget when developing a YaST module - it
+has to work properly with ncurses in a resolution of 80 columns and 25 lines.
+So the next step is to resize your terminal emulator to a size of 80x25 and run:
 </p>
 {% highlight bash %}
 Y2DIR=src/ /usr/sbin/yast2 --ncurses mockup
 {% endhighlight %}
+<p>
+The result looked far from perfect in graphical mode, but with ncurses and a
+size of 80x25 it looks almost catastrophic. Very little space is left for the
+log entries, which is the most relevant part. Needless to say, it will become
+even worst if we add more filters in the future.
+</p>
+<img class="centered" src="assets/images/step2-ncurses.png">
 
 <h3>Let's try again</h3>
 <p>
-The result looked far from perfect in graphical mode, but with ncurses and 80x25
-it looks almost catastrophic. Almost no space is left for the log entries, which
-is the most relevant part. Needless to say, it will become even worst if we add
-more filters in the future. We need to rethink our UI to avoid having everything
-in one single dialog. Time for the <a hef="step3.hml">next step</a>.
+From the previous screenshot, it's obvious that we need to rethink our user
+interface to avoid having everything in one single dialog. Time for the
+<a hef="step3.hml">next step</a>.
 </p>
