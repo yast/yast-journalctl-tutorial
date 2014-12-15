@@ -16,6 +16,6 @@
 #  To contact Novell about this file by physical or electronic mail,
 #  you may find current contact information at www.suse.com
 
-require "journalctl/mockup_dialog"
+require "journalctl/entries_dialog"
 
-Journalctl::MockupDialog.new.run
+Journalctl::EntriesDialog.new.run

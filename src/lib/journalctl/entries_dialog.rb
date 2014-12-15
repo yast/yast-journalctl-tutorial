@@ -17,13 +17,14 @@
 #  you may find current contact information at www.suse.com
 
 require "yast"
+require "journalctl/query_dialog.rb"
 
 Yast.import "UI"
 Yast.import "Label"
 
 module Journalctl
   # Dialog to display journal entries with several filtering options
-  class MockupDialog
+  class EntriesDialog
 
     include Yast::UIShortcuts
     include Yast::I18n
@@ -32,7 +33,7 @@ module Journalctl
     def initialize
       textdomain "journalctl"
     end
-     
+
     # Displays the dialog
     def run
       return unless create_dialog
@@ -54,30 +55,29 @@ module Journalctl
           # Header
           Heading(_("Journal entries")),
 
-          # Boot selector
-          Frame(
-            _("Log entries for"),
-            boot_widget
+          # Filters
+          Left(
+            HBox(
+              Label(_("Displaying entries with the following text")),
+              HSpacing(1),
+              InputField(Id(:search), Opt(:hstretch, :notify), "", "")
+            )
           ),
-          VSpacing(0.3),
-
-          # Filter checkboxes
-          Frame(
-            _("Filters"),
-            additional_filters_widget
-          ),
-          VSpacing(0.3),
-
-          # Refresh
-          Right(PushButton(Id(:refresh), _("Refresh"))),
+          Left(Label(_("since system's boot with no additional conditions"))),
           VSpacing(0.3),
 
           # Log entries
           table,
           VSpacing(0.3),
 
-          # Quit button
-          PushButton(Id(:cancel), Yast::Label.QuitButton)
+          # Footer buttons
+          HBox(
+            HWeight(1, PushButton(Id(:filter), _("Change filter..."))),
+            HStretch(),
+            HWeight(1, PushButton(Id(:refresh), _("Refresh"))),
+            HStretch(),
+            HWeight(1, PushButton(Id(:cancel), Yast::Label.QuitButton))
+          )
         )
       )
     end
@@ -86,13 +86,23 @@ module Journalctl
       Yast::UI.CloseDialog
     end
 
-    # Simple event loop 
+    # Simple event loop
     def event_loop
       loop do
-        input = Yast::UI.UserInput
-        if input == :cancel
+        case Yast::UI.UserInput
+        when :cancel
           # Break the loop
           break
+        when :filter
+          if QueryDialog.new.run
+            log.info "The user has set new arguments for the query"
+          else
+            log.info "The user canceled the query dialog"
+          end
+        when :search
+          log.info "Handling of the search text input not implemented yet"
+        when :refresh
+          log.info "Handling of the refresh button not implemented yet"
         else
           log.warn "Unexpected input #{input}"
         end
@@ -111,39 +121,6 @@ module Journalctl
         ),
         []
       )
-    end
-
-    # Widget allowing to select a boot option
-    def boot_widget
-      RadioButtonGroup(
-        Id(:boot),
-        VBox(
-          Left(RadioButton(Id(:boot_0), _("Current boot"))),
-          Left(RadioButton(Id(:boot_1), _("Previous boot")))
-        )
-      )
-    end
-
-    # Widget containing a checkbox per filter
-    def additional_filters_widget
-      filters = [
-        { name: :unit, label: _("For this systemd unit") },
-        { name: :file, label: _("For this file (executable or device)") },
-        { name: :priority, label: _("With at least this priority") }
-      ]
-
-      checkboxes = filters.map do |filter|
-        name = filter[:name]
-        Left(
-          HBox(
-            CheckBox(Id(name), filter[:label]),
-            HSpacing(1),
-            InputField(Id(:"#{name}_value"), "", "")
-          )
-        )
-      end
-
-      VBox(*checkboxes)
     end
   end
 end
