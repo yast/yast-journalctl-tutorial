@@ -13,7 +13,7 @@ interface. Let's take a look to what we need:
 <ul>
   <li>a table to display the log entries,</li>
   <li>some radio buttons to select which boot,</li>
-  <li>some checkboxes to enable and disable filters,</li>
+  <li>some check-boxes to enable and disable filters,</li>
   <li>a button to refresh the entries table when the filters change,</li>
   <li>last but not least, a button to quit.</li>
 </ul>
@@ -24,13 +24,13 @@ That sounds challenging enough for a newbie, let's go for it!
 From all the useful links that can be found in the &quot;graphical
 interface&quot; section of
 <a href="http://yast.github.io/documentation.html">the YaST documentation</a>
-homepage, the
+home page, the
 <a href="https://doc.opensuse.org/projects/YaST/openSUSE11.3/tdg/Book-YCPUIlayout.html">UI
 layouts and events guide</a> is probably the best starting point to fully
 understand how everything works and fits. But sometimes the best shortcut for
 learning is some example code and
 <a href="https://github.com/yast/yast-ycp-ui-bindings/tree/master/examples">this
-url</a> is packed with nice examples of the usage of libYUI widgets from Ruby.
+URL</a> is packed with nice examples of the usage of libYUI widgets from Ruby.
 </p>
 
 <h3>Taking a look to the code</h3>
@@ -76,7 +76,7 @@ end
 For developers coming from more classical GUI toolkits like Gtk or
 Qt, the need to write an event loop can look strange. As opposed to those
 toolkits, libYUI is not event-driven because that approach does not completely
-fit the typical YaST application workflow. Just in case you wonder, in the next
+fit the typical YaST application work-flow. Just in case you wonder, in the next
 step of this tutorial a second dialog will be added to our module and then
 you'll see a clear example of such a typical YaST dialog (not event-driven).
 </p>

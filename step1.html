@@ -7,10 +7,10 @@ layout: default
 <h3>A basic client as a first step</h3>
 <p>
 Usually, the first step when creating an application with a graphical interface
-is drawing some mockups for that interface. It can be done with any availabe
+is drawing some mockups for that interface. It can be done with any available
 tool (including good old paper&amp;pencil), but when developing a YaST module
 you will always have to take into account the ncurses interface. With that in
-mind, maybe using <a href="https://github.com/libyui/libyui">libyui</a>
+mind, maybe using <a href="https://github.com/libyui/libyui">libYUI</a>
 (the widget abstraction library used by YaST) to write the mockup is not a bad
 idea.
 </p>
@@ -42,7 +42,7 @@ Inside that directory there are only two files: &quot;clients/mockup.rb&quot;
 and &quot;lib/systemd_journal/mockup_dialog.rb&quot;. The first one is mainly
 a Ruby script. Whatever code is there, it will be executed right away when
 calling the client. Several old YaST modules contain clients with the
-functionality implemented inline. This is now considered harmfull since it makes
+functionality implemented in-line. This is now considered harmful since it makes
 harder to use automatic test tools. The preferred approach is to encapsulate the
 functionality in classes and have minimal clients that simply invoke the methods
 on those classes. As you can see, our mockup client simply calls the method
@@ -101,14 +101,14 @@ returning an object that can be used to write content in the YaST logs.
 </p>
 <p>
 The first mixin provides several methods to increase the
-readibility of the code used to define the user interface, but to fully
+readability of the code used to define the user interface, but to fully
 understand how it works it's convenient to understand the YCP's concept of
 &quot;term&quot;. A term is one of the basic data types in the YaST Components
 Protocol and the main mechanism to defer the execution of a piece of code. 
 The definition of the UI is done using a tree-like structure of YCP terms where
 each term represents a function call. For example, the following ruby code
 defines a tree of terms that will be translated to the corresponding calls
-to libyui functions when needed.
+to libYUI functions when needed.
 </p>
 {% highlight ruby %}
 content = Yast::Term.new(:VBox,
@@ -133,7 +133,7 @@ content = VBox(
 <p>
 Much more readable and clean. The only drawback is that now is easier to forget
 that the &quot;content&quot; variable will not contain the result of calling the
-VBox function of libyui, but a tree structure with the function calls (function
+VBox function of libYUI, but a tree structure with the function calls (function
 names and corresponding arguments) that will be performed while actually drawing
 the interface.
 </p>
@@ -175,7 +175,7 @@ repository:
 Y2DIR=src/ /usr/sbin/yast2 mockup
 {% endhighlight %}
 <p>
-Pretty straighforward, just like invoking any YaST client installed in the
+Pretty straightforward, just like invoking any YaST client installed in the
 system but using the Y2DIR environment variable to tell YaST to look first into
 our src directory when looking for YaST components.
 </p>
