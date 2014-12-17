@@ -1,0 +1,175 @@
+---
+layout: default
+---
+
+<h2>Communication with the underlying system</h2>
+
+<h3>The available tools</h3>
+<p>
+Having completed the previous steps, we now have a clear view on how the
+interface will look like. The next logical step is to get some data to display
+there. The only way to access the systemd journal in a Linux system is the
+journalctl command. Fortunately journalctl is very flexible and supports many
+output formats, some of them very convenient for automatic processing. For
+example, this command will print to the standard output all the journal entries
+generated since the last system's startup in JSON format.
+</p>
+{% highlight bash %}
+journalctl --no-pager -o json -b 0
+{% endhighlight %}
+<p>
+As explained in the architecture description found in the
+<a href="http://yast.github.io/documentation.html">YaST documentation</a>, YaST
+offers a very convenient way to communicate with the underlying Linux system -
+the SCR component and its agents. Each agent takes care of a very concrete type
+of system resource and implements a common interface with just four operations:
+read, write, dir and execute. The SCR component uses YCP paths to identify the
+agent and the concrete action. A path is a YCP-specific data type designed to
+denote nodes from tree-like structures using labels and dots. For example,
+since the SCR agent parsing the file &quot;/etc/sysconfig/clock&quot; is
+attached to the path &quot;.sysconfig.clock&quot;, the following Ruby code can
+be used to read the value of the TIMEZONE parameter in that file.
+</p>
+{% highlight ruby %}
+path = Yast::Path.new(".sysconfig.clock.TIMEZONE")
+Yast::SCR.Read(path)
+{% endhighlight %}
+<p>
+The most widely used YaST agent is called Target and offers an
+interface to (shell) commands of the target Linux system. Unsurprisingly, the
+Target agent is attached to the ".target" path. One of the many commands
+offered by the Target agent is &quot;bash_output&quot;, which executes a
+command in the target system and returns a structure including &quot;exit&quot;
+for the exit code, &quot;stdout&quot; for the command output and
+&quot;stderr&quot; for the error messages.
+</p>
+
+<h3>The Journalctl::Entry class</h3>
+<p>
+Taking into consideration all the above information, looks like we have in our
+toolbox everything we need in order to implement a class representing
+systemd journal entries and offering methods to retrieve them from the
+target system. Feel free to design and implement your our solution. You can
+find the proposed one in &quot;src/lib/journalctl/entry.rb&quot; right after
+executing:
+</p>
+{% highlight bash %}
+git checkout domain_models
+{% endhighlight %}
+<p>
+As you can see, the public interface offered by this class is very simple, just
+a class method called &quot;all&quot; which will return an array of Entry
+objects and some attribute readers for the relevant information of each entry.
+The only method containing YaST-specific code is &quot;journalctl_output&quot;,
+which relies in the abovementioned Target SCR agent. The proposed solution
+includes some handling for known journalctl errors.
+</p>
+{% highlight ruby %}
+JOURNALCTL = "LANG=C journalctl --no-pager -o json"
+
+# Handles the journalctl call
+#
+# @param args [String] arguments to journalctl
+# @return [String] command output
+def self.journalctl_output(args)
+  cmd = "#{JOURNALCTL} #{args}".strip
+  path = Yast::Path.new(".target.bash_output")
+  cmd_result = Yast::SCR.Execute(path, cmd)
+
+  if cmd_result["exit"].zero?
+    cmd_result["stdout"]
+  else
+    if cmd_result["stderr"] =~ /^Failed to .* timestamp:/
+      # Most likely, journalctl bug when an empty list is found
+      ""
+    else
+      raise "Calling journalctl failed: #{cmd_result["stderr"]}"
+    end
+  end
+end
+{% endhighlight %}
+
+<h3>The Journalctl::Query class</h3>
+<p>
+Using the Entry class directly would require to know the syntax of the
+journalctl arguments. In order to abstract the details and also as a way to
+provide some introspection capabilities for the user interface, a
+Journalctl::Query class is implemented in
+&quot;src/lib/journalctl/query.rb&quot;. The usage is again quite simple, as
+shown by the following example.
+</p>
+{% highlight ruby %}
+query = Journalctl::Query.new(boot: -1, priority: 5)
+puts "First entry's process: #{query.entries.first.process_name}"
+puts "Using priority #{query.filters[:priority]}"
+{% endhighlight %}
+<p>
+This looks like good API to support not only the user interface we designed in
+the previous steps but also any other Ruby code needing access to the systemd
+journal. &quot;But is that enough?&quot; you may wonder. After all, YaST is a
+multi-language beast and maybe you should provide a YCP interface for your
+journalctl wrapper to be used from other programming languages. Fortunately,
+the answer is that you don't have to worry about it. YCP is still a core
+technology for YaST, but it's considered legacy. Ruby is the future of
+YaST and thus all new code is expected to focus only in Ruby and its ecosystem.
+</p>
+
+<h3>The RSpec tests</h3>
+<p>
+Of course, no Ruby class is complete without the corresponding unit tests. As
+many other Ruby-based projects, YaST uses <a href="http://rspec.info/">RSpec</a>
+(version 2 at the time of writing) for unit testing. In the
+<a href="http://yast.github.io/guidelines.html">guidelines section</a> of the
+YaST home page you will find some recommendations for writing YaST tests.
+</p>
+<p>
+Under the &quot;test&quot; directory you will find the corresponding RSpec
+unit tests for Entry and Query. The location of the tests and the name of
+the files are relevant for the automation tasks that will be explained in
+the next step of this tutorial. The tests are presented just as a simple example
+and are not completely exhaustive. Feel free to implement any additional check.
+</p>
+<p>
+To ensure that all the classes, modules and clients defined in our code
+are available during the tests (in a predictable path), we use the same trick
+that we used for running the mockup on previous steps - setting the Y2DIR
+environment variable. Thus, the first line of the spec_helper.rb file included
+in every test looks like this.
+</p>
+{% highlight ruby %}
+ENV["Y2DIR"] = File.expand_path("../../src", __FILE__)
+{% endhighlight %}
+
+<p>
+When writing YaST tests is very important to
+<a href="http://www.rubydoc.info/gems/rspec-mocks/">stub</a> the usage of SCR
+agents. Otherwise, they will perform their operations on the system running the
+tests, which can lead to inconsistent results and even big troubles if these
+operations involve something more dangerous than reading the systemd journal.
+There are plans to include that functionality into the YaST Ruby bindings in the
+near future and offer convenient RSpec helpers to deal with SCR. Meanwhile, the
+proposal in this tutorial shows a simple solution for the particular case of
+stubbing the calls to journalctl (and other commands) using the
+&quot;.target.bash_output&quot; path.
+</p>
+{% highlight ruby %}
+# Stub a command execution
+def allow_to_execute(cmd)
+  path = Yast::Path.new(".target.bash_output")
+  allow(Yast::SCR).to receive(:Execute).with(path, cmd)
+end
+{% endhighlight %}
+
+<h3>Almost there</h3>
+<p>
+We already have a basic user interface and some domain models capable of reading
+the information we need from the system. We just need to put everything
+together and we will be ready to release version 0.1&hellip; presuming that we have
+some mechanism to label versions. Not to mention some tasks we would need to do
+in order to actually ship something reliable, like packaging it or ensuring that
+our newly created tests are executed for every new version.
+</p>
+<p>
+So before we continue writing code, let's take a look to the available YaST
+development tools in the <a href="step5.html">next step</a> of the tutorial.
+</p>
