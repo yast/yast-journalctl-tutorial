@@ -43,6 +43,12 @@ command in the target system and returns a structure including &quot;exit&quot;
 for the exit code, &quot;stdout&quot; for the command output and
 &quot;stderr&quot; for the error messages.
 </p>
+<p>
+You can read more about the agents, including a full description of the
+functionality provided by the Target agent, in the
+<a href="http://www.rubydoc.info/github/yast/yast-core/">YaST core
+documentation</a>.
+</p>
 
 <h3>The Journalctl::Entry class</h3>
 <p>
@@ -99,6 +105,8 @@ Journalctl::Query class is implemented in
 shown by the following example.
 </p>
 {% highlight ruby %}
+require "journalctl/query"
+
 query = Journalctl::Query.new(boot: -1, priority: 5)
 puts "First entry's process: #{query.entries.first.process_name}"
 puts "Using priority #{query.filters[:priority]}"
@@ -114,60 +122,16 @@ technology for YaST, but it's considered legacy. Ruby is the future of
 YaST and thus all new code is expected to focus only in Ruby and its ecosystem.
 </p>
 
-<h3>The RSpec tests</h3>
-<p>
-Of course, no Ruby class is complete without the corresponding unit tests. As
-many other Ruby-based projects, YaST uses <a href="http://rspec.info/">RSpec</a>
-(version 2 at the time of writing) for unit testing. In the
-<a href="http://yast.github.io/guidelines.html">guidelines section</a> of the
-YaST home page you will find some recommendations for writing YaST tests.
-</p>
-<p>
-Under the &quot;test&quot; directory you will find the corresponding RSpec
-unit tests for Entry and Query. The location of the tests and the name of
-the files are relevant for the automation tasks that will be explained in
-the next step of this tutorial. The tests are presented just as a simple example
-and are not completely exhaustive. Feel free to implement any additional check.
-</p>
-<p>
-To ensure that all the classes, modules and clients defined in our code
-are available during the tests (in a predictable path), we use the same trick
-that we used for running the mockup on previous steps - setting the Y2DIR
-environment variable. Thus, the first line of the spec_helper.rb file included
-in every test looks like this.
-</p>
-{% highlight ruby %}
-ENV["Y2DIR"] = File.expand_path("../../src", __FILE__)
-{% endhighlight %}
-
-<p>
-When writing YaST tests is very important to
-<a href="http://www.rubydoc.info/gems/rspec-mocks/">stub</a> the usage of SCR
-agents. Otherwise, they will perform their operations on the system running the
-tests, which can lead to inconsistent results and even big troubles if these
-operations involve something more dangerous than reading the systemd journal.
-There are plans to include that functionality into the YaST Ruby bindings in the
-near future and offer convenient RSpec helpers to deal with SCR. Meanwhile, the
-proposal in this tutorial shows a simple solution for the particular case of
-stubbing the calls to journalctl (and other commands) using the
-&quot;.target.bash_output&quot; path.
-</p>
-{% highlight ruby %}
-# Stub a command execution
-def allow_to_execute(cmd)
-  path = Yast::Path.new(".target.bash_output")
-  allow(Yast::SCR).to receive(:Execute).with(path, cmd)
-end
-{% endhighlight %}
-
-<h3>Almost there</h3>
+<h3>Laying the foundation</h3>
 <p>
 We already have a basic user interface and some domain models capable of reading
-the information we need from the system. We just need to put everything
-together and we will be ready to release version 0.1&hellip; presuming that we have
-some mechanism to label versions. Not to mention some tasks we would need to do
-in order to actually ship something reliable, like packaging it or ensuring that
-our newly created tests are executed for every new version.
+the information we need from the system. But before starting to put both things
+together we need to ensure that we are standing on solid ground.
+</p>
+<p>
+First of all, we obviously need to write unit tests for our new models.
+Moreover, it would be nice to have some tools to check that our code can be
+properly executed and complies with the YaST standards.
 </p>
 <p>
 So before we continue writing code, let's take a look to the available YaST

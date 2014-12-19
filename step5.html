@@ -1,0 +1,181 @@
+---
+layout: default
+---
+
+<h2>Automation and testing</h2>
+
+<h3>The YaST rake tasks</h3>
+<p>
+During the introduction section of this tutorial we used a rake task to execute
+our YaST module. This and many other tasks are provided by the
+<a href="https://rubygems.org/gems/yast-rake">yast-rake gem</a>. We already have
+the gem installed in our system, so adding a very simple Rakefile will
+immediately supercharge our prototype. To checkout that file, simply run:
+</p>
+{% highlight bash %}
+git checkout rakefile
+{% endhighlight %}
+<p>
+As you can see, the new Rakefile contains only the following line.
+</p>
+{% highlight ruby %}
+require "yast/rake"
+{% endhighlight %}
+<p>
+That's enough to add all the YaST rake tasks to our module. As usual, you can
+ask rake to list all the available tasks (but don't get too disappointed with
+the result).
+</p>
+{% highlight bash %}
+rake -T
+{% endhighlight %}
+<p>
+It failed!&hellip; and with a rather cryptic error message. But don't worry, it's
+easy to fix.
+</p>
+<p>
+Many of the tasks provided by yast-rake are related to packaging (to be precise,
+those packaging tasks are actually provided by the
+<a href="https://rubygems.org/gems/packaging_rake_tasks">packaging_rake_tasks</a>
+gem, required by yast-rake). For that reason you need a package specification to
+get the YaST rake tasks running. In your case, that is as easy as executing the
+following command.
+</p>
+{% highlight bash %}
+git checkout package_spec
+{% endhighlight %}
+<p>
+Now, &quot;package/yast2-journalctl.spec&quot; contains a basic package
+specification to be processed by the
+<a href="http://openbuildservice.org/">Open Build Service</a> (mainly a 
+<a href="http://www.rpm.org/">RPM</a> spec file). We will go back to packaging
+in the last step of the tutorial, but if you want to learn more about the Open
+Build Service and openSUSE packages creation, check the
+<a href="https://en.opensuse.org/Portal:Packaging">corresponding portal</a>
+in the openSUSE wiki.
+</p>
+<p>
+Now that &quot;rake -T&quot; finally works, let's try some of the useful
+available tasks. First of all, two very simple but handy tasks to check our
+code.
+</p>
+{% highlight bash %}
+rake check:license
+rake check:syntax
+{% endhighlight %}
+<p>
+As you already know, there are also tasks for running the software. One for
+executing our mockup client and another one for invoking a Ruby interpreter with
+our code already pre-loaded.
+</p>
+{% highlight bash %}
+rake run
+rake console
+{% endhighlight %}
+<p>
+You can paste the example code about Journalctl:Query usage at the end of the
+<a href="step4.html">previous step</a> directly into the interpreter opened by
+&quot;rake console&quot; and everything will work out of the box.
+</p>
+<p>
+As mentioned, we will explore other tasks (mostly related to packaging) in an
+upcoming step, but first we need to finish our prototype.
+</p>
+
+<h3>The RSpec tests</h3>
+<p>
+Of course, no Ruby class is complete without the corresponding unit tests.
+Thus we need unit tests for our Entry and Query classes before proceeding with
+any further action. As many other Ruby-based projects, YaST uses
+<a href="http://rspec.info/">RSpec</a> (version 2 at the time of writing)
+for unit testing. In the
+<a href="http://yast.github.io/guidelines.html">guidelines section</a> of the
+YaST home page you will find some recommendations for writing YaST tests.
+</p>
+<p>
+To checkout some example unit tests for our models run the following command.
+</p>
+{% highlight bash %}
+git checkout unit_tests
+{% endhighlight %}
+<p>
+Under the &quot;test&quot; directory you will find the corresponding RSpec
+unit tests for Entry and Query. Those tests are just a simple example and
+are not completely exhaustive. Feel free to implement any additional check.
+You can run the tests using the following YaST rake task.
+</p>
+{% highlight bash %}
+rake test:unit
+{% endhighlight %}
+<p>
+This will execute RSpec with all the files located in the &quot;test&quot;
+directory with a name ending with &quot;_test.rb&quot; or &quot;_spec.rb&quot;.
+This task is crucial in the development work-flow of any YaST module. It's
+always executed before building a package and before integrating any pull
+request into the repositories, so better make sure that your module always
+contains a comprehensive and updated suite of unit tests. Moreover, the unit
+tests are considered by some YaST developers as the only authoritative
+documentation for the programming interface of a class (since they are by
+definition always up-to-date).
+</p>
+<p>
+Let's take a look to the implementation of the provided example test suite.
+To ensure that all the classes, modules and clients defined in our code
+are available during the tests (in a predictable path), we use the same trick
+that we used for running the mockup on previous steps - setting the Y2DIR
+environment variable. Thus, the first line of the spec_helper.rb file included
+in every test looks like this.
+</p>
+{% highlight ruby %}
+ENV["Y2DIR"] = File.expand_path("../../src", __FILE__)
+{% endhighlight %}
+<p>
+When writing YaST tests is very important to
+<a href="http://www.rubydoc.info/gems/rspec-mocks/">stub</a> the usage of SCR
+agents. Otherwise, they will perform their operations on the system running the
+tests, which can lead to inconsistent results and even big troubles if these
+operations involve something more dangerous than reading the systemd journal.
+There are plans to include that functionality into the YaST Ruby bindings in the
+near future and offer convenient RSpec helpers to deal with SCR. Meanwhile, the
+proposal in this tutorial shows a simple solution for the particular case of
+stubbing the calls to journalctl (and other commands) using the
+&quot;.target.bash_output&quot; path.
+</p>
+{% highlight ruby %}
+# Stub a command execution
+def allow_to_execute(cmd)
+  path = Yast::Path.new(".target.bash_output")
+  allow(Yast::SCR).to receive(:Execute).with(path, cmd)
+end
+{% endhighlight %}
+<p>
+The following code extracted from entry_test.rb shows how the above
+helper method can then be used (together with other methods defined in
+spec_helper.rb) to write safe specs that simulate the underlying system.
+</p>
+{% highlight ruby %}
+describe ".all" do
+  subject { Journalctl::Entry.all }
+  # Stub journalctl call
+  before do
+    allow_to_execute(/LANG=C journalctl/).and_return(result)
+  end
+
+  context "when journalctl reports 'Failed to determine timestamp'" do
+    let(:result) {
+      journalctl_error("Failed to determine timestamp: Cannot assign")
+    }
+
+    it "returns an empty array" do
+      expect(subject).to eq([])
+    end
+  end
+end
+{% endhighlight %}
+
+<h2>Almost there</h2>
+<p>
+Now we can finally say that we have all the pieces: tested models, a user
+interface and all the necessary tools. Only <a href="step6.html">one step</a>
+away from our first fully-functional YaST module.
+</p>
