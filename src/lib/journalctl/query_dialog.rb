@@ -33,8 +33,9 @@ module Journalctl
 
     INPUT_WIDTH = 20
 
-    def initialize
+    def initialize(query)
       textdomain "journalctl"
+      @query = query
     end
 
     # Displays the dialog
@@ -44,9 +45,9 @@ module Journalctl
       begin
         case Yast::UI.UserInput
         when :cancel
-          false
+          nil
         when :ok
-          true
+          query_from_widgets
         else
           raise "Unexpected input #{input}"
         end
@@ -56,6 +57,25 @@ module Journalctl
     end
 
   private
+
+    # Translates the value of the widgets to a new QueryPresenter object
+    def query_from_widgets
+      boot = Yast::UI.QueryWidget(Id(:boot), :CurrentButton)
+      filters = { boot: boot }
+
+      QueryPresenter.additional_filters.each do |filter|
+        name = filter[:name]
+        # If the checkbox is checked
+        if Yast::UI.QueryWidget(Id(name), :Value)
+          # Read the widget...
+          value = Yast::UI.QueryWidget(Id(:"#{name}_value"), :Value)
+          # ...discarding empty values
+          filters[name] = value unless value.empty?
+        end
+      end
+
+      QueryPresenter.new(filters)
+    end
 
     # Draws the dialog
     def create_dialog
@@ -87,37 +107,52 @@ module Journalctl
       )
     end
 
-    # Widget allowing to select a boot option
     def boot_widget
-      RadioButtonGroup(
-        Id(:boot),
-        VBox(
-          Left(RadioButton(Id(:boot_0), _("Current boot"))),
-          Left(RadioButton(Id(:boot_1), _("Previous boot")))
-        )
-      )
+      RadioButtonGroup(Id(:boot), VBox(*boot_buttons))
     end
 
-    # Widget containing a checkbox per filter
-    def additional_filters_widget
-      filters = [
-        { name: :unit, label: _("For this systemd unit") },
-        { name: :file, label: _("For this file (executable or device)") },
-        { name: :priority, label: _("With at least this priority") }
-      ]
+    # Array of radio buttons to select the boot
+    def boot_buttons
+      QueryPresenter.boot_options.map do |opt|
+        value = opt[:value]
+        selected = value === @query.filters[:boot]
 
-      checkboxes = filters.map do |filter|
+        Left(RadioButton(Id(value), opt[:label], selected))
+      end
+    end
+
+    # Widget allowing to set the filters
+    def additional_filters_widget
+      filters = QueryPresenter.additional_filters.map do |filter|
         name = filter[:name]
         Left(
           HBox(
-            CheckBox(Id(name), filter[:label]),
+            CheckBox(Id(name), filter[:label], !@query.filters[name].nil?),
             HSpacing(1),
-            MinWidth(INPUT_WIDTH, InputField(Id(:"#{name}_value"), "", ""))
+            widget_for_filter(name, filter[:values])
           )
         )
       end
+      VBox(*filters)
+    end
 
-      VBox(*checkboxes)
+    # Widget to set the value of a given filter.
+    #
+    # If the second argument is nil, an input field will be used. Otherwise, a
+    # combo box will be returned.
+    #
+    # @param name [Symbol] name of the filter
+    # @param values [Array] optional list of values for the combo box
+    def widget_for_filter(name, values = nil)
+      id = Id(:"#{name}_value")
+      if values
+        items = values.map do |value|
+          Item(Id(value), value, @query.filters[name] == value)
+        end
+        ComboBox(id, "", items)
+      else
+        MinWidth(INPUT_WIDTH, InputField(id, "", @query.filters[name] || ""))
+      end
     end
   end
 end

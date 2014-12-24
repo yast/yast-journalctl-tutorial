@@ -18,9 +18,11 @@
 
 require "yast"
 require "journalctl/query_dialog.rb"
+require "journalctl/query_presenter.rb"
 
 Yast.import "UI"
 Yast.import "Label"
+Yast.import "Popup"
 
 module Journalctl
   # Dialog to display journal entries with several filtering options
@@ -32,6 +34,10 @@ module Journalctl
 
     def initialize
       textdomain "journalctl"
+
+      @query = QueryPresenter.new
+      @search = ""
+      read_entries
     end
 
     # Displays the dialog
@@ -63,7 +69,7 @@ module Journalctl
               InputField(Id(:search), Opt(:hstretch, :notify), "", "")
             )
           ),
-          Left(Label(_("since system's boot with no additional conditions"))),
+          Left(ReplacePoint(Id(:query), query_description)),
           VSpacing(0.3),
 
           # Log entries
@@ -94,15 +100,20 @@ module Journalctl
           # Break the loop
           break
         when :filter
-          if QueryDialog.new.run
-            log.info "The user has set new arguments for the query"
-          else
-            log.info "The user canceled the query dialog"
+          # The user clicked the filter button
+          if read_query
+            read_entries
+            redraw_query
+            redraw_table
           end
         when :search
-          log.info "Handling of the search text input not implemented yet"
+          # The content of the search box changed
+          read_search
+          redraw_table
         when :refresh
-          log.info "Handling of the refresh button not implemented yet"
+          # The user clicked the refresh button
+          read_entries
+          redraw_table
         else
           log.warn "Unexpected input #{input}"
         end
@@ -111,16 +122,73 @@ module Journalctl
 
     # Table widget to display log entries
     def table
+      headers = @query.columns.map {|c| c[:label] }
+
       Table(
         Id(:entries_table),
         Opt(:keepSorting),
-        Header(
-          _("Time"),
-          _("Source"),
-          _("Message"),
-        ),
-        []
+        Header(*headers),
+        table_items
       )
+    end
+
+    def table_items
+      # Reduce it to an array with only the visible fields
+      entries_fields = @entries.map do |entry|
+        @query.columns.map {|c| entry.send(c[:method]) }
+      end
+      # Grep for entries matching @search in any visible field
+      entries_fields.select! do |fields|
+        fields.any? {|f| Regexp.new(@search, Regexp::IGNORECASE).match(f) }
+      end
+      # Return the result as an array of Items
+      entries_fields.map {|fields| Item(*fields) }
+    end
+
+    def query_description
+      Label(@query.filters_description)
+    end
+
+    def redraw_query
+      Yast::UI.ReplaceWidget(Id(:query), query_description)
+    end
+
+    def redraw_table
+      Yast::UI.ChangeWidget(Id(:entries_table), :Items, table_items)
+    end
+
+    # Asks the user the new query options using SystemdJournal::QueryDialog.
+    #
+    # @see SystemdJournal::QueryDialog
+    #
+    # @return [Boolean] true whether the query has changed
+    def read_query
+      query = QueryDialog.new(@query).run
+      if query
+        @query = query
+        log.info "New query is #{@query}."
+        true
+      else
+        log.info "QueryDialog returned nil. Query is still #{@query}."
+        false
+      end
+    end
+
+    # Gets the new search string from the interface
+    def read_search
+      @search = Yast::UI.QueryWidget(Id(:search), :Value)
+      log.info "Search string set to '#{@search}'"
+    end
+
+    # Reads the journal entries from the system
+    def read_entries
+      log.info "Calling journalctl with '#{@query.journalctl_args}'"
+      @entries = @query.entries
+      log.info "Call to journalctl returned #{@entries.size} entries."
+    rescue => e
+      log.warn e.message
+      @entries = []
+      Yast::Popup.Message(e.message)
     end
   end
 end
