@@ -1,0 +1,229 @@
+---
+layout: default
+---
+
+<h2>Joining the pieces</h2>
+
+<h3>It even works!</h3>
+<p>
+Now we are ready for the last two steps in our development process: turn our mockup
+into a real YaST module capable of displaying system information and package the
+resulting module in order to install it and distribute it.
+</p>
+<p>
+As usual, let's start fetching the proposed solution by running the following
+command in our local copy.
+</p>
+{% highlight bash %}
+git checkout fully_working
+{% endhighlight %}
+<p>
+Play a little bit with the result (both as a regular user and as root) before
+diving into the code.
+</p>
+
+<h3>Separated presentation</h3>
+<p>
+YaST does not enforce any particular software pattern to structure the code of
+complex modules. Moreover, the example journalctl module is intentionally
+simple, so we can focus on the YaST characteristics and avoid complex
+architectural disquisitions. Even though, we don't want to have code in our
+dialogs that is not strictly related to drawing widgets and driving the
+interaction with the user and we obviously don't want to mess our Entry and
+Query models with presentation logic.
+</p>
+<p>
+In order to keep things tidy, the example code you have just fetched uses
+presenters to intermediate between the domain models and the dialogs. Presenters
+are a very popular approach to implement the
+<a href="http://martinfowler.com/eaaDev/SeparatedPresentation.html">separated
+presentation pattern</a> using delegators. Instead of accessing directly to the
+domain classes, the dialogs rely on the corresponding presenters for those
+classes.
+</p>
+<p>
+Same as other classes in this tutorial, the included unit tests for
+EntryPresenter and QueryPresenter are not as exhaustive as they should be and
+are offered only as a starting point for writing a more comprehensive suite.
+</p>
+<p>
+Although the usage of presenters is quite common in other development
+environments like the Ruby on Rails community, it's not the standard way of
+organizing the code in the existing YaST modules. In fact, there is currently
+nothing like a &quot;standard way or organizing the code&quot; in YaST. Thus,
+if the usage of presenters does not fit your problem or your personal
+preferences, feel free to use any other approach.
+</p>
+
+<h3>From mockup to reality</h3>
+<p>
+In the original mockup there was no binding between the widgets and
+any real information coming from the system or the user. Now the
+EntriesDialog object keeps three instance variables to store that information.
+</p>
+<ul>
+  <li>@query is a QueryPresenter object to keep the filters and associated
+    information.</li>
+  <li>@entries is an array of EntryPresenter objects fetched by @query
+    from the systemd journal.</li>
+  <li>@search is the string used to filter the displayed entries, entered by
+    the user in the corresponding text input field.</li>
+</ul>
+<p>
+In addition, another subtle but meaningful change has be done by renaming the
+client from mockup.rb to journalctl.rb.
+</p>
+
+<h3>A more interactive interface</h3>
+<p>
+As opposed to the mockup, in which the only possible interaction was opening and
+closing the dialogs, our module can now react to many events, like shown in
+the new event loop.
+</p>
+{% highlight ruby %}
+def event_loop
+  loop do
+    case Yast::UI.UserInput
+    when :cancel
+      # Break the loop
+      break
+    when :filter
+      # The user clicked the filter button
+      if read_query
+        read_entries
+        redraw_query
+        redraw_table
+      end
+    when :search
+      # The content of the search box changed
+      read_search
+      redraw_table
+    when :refresh
+      # The user clicked the refresh button
+      read_entries
+      redraw_table
+    else
+      log.warn "Unexpected input #{input}"
+    end
+  end
+end
+{% endhighlight %}
+<p>
+The loop relies on three private methods to set the value of the instance
+variables (unsurprisingly called read_query, read_entries and read_search)
+and two methods (redraw_query and redraw_table) to update the user interface.
+</p>
+<p>
+Let start with the latter. The method redraw_table is just a one-liner that uses
+the ChangeWidget function to alter the :Items property of the widget with the
+identifier :entries_table.
+</p>
+{% highlight ruby %}
+def redraw_table
+  Yast::UI.ChangeWidget(Id(:entries_table), :Items, table_items)
+end
+{% endhighlight %}
+<p>
+As you may have already guessed, the same function can be used not only to
+change the list of items in other type of widgets (like a combo box), but also
+to change other properties like the status of a widget (:Enabled), its label
+(:Label), its content (:Value), the selected item (:CurrentItem) and many more.
+</p>
+<p>
+But sometimes altering an already existing widget is not enough and is better
+to fully replace it with something else. That's exactly what redraw_query does
+with one of the labels at the top of the dialog.
+</p>
+{% highlight ruby %}
+def redraw_query
+  Yast::UI.ReplaceWidget(Id(:query), query_description)
+end
+{% endhighlight %}
+<p>
+But replacing widgets needs some preparation. ReplaceWidget will only work on a
+special type of widget called ReplacePoint which has no visual effect and
+whose only purpose is to act as a marker for ReplaceWidget within the widgets
+tree, as you can see in the following excerpt from EntriesDialog.
+</p>
+{% highlight ruby %}
+def create_dialog
+  Yast::UI.OpenDialog(
+    Opt(:decorated, :defaultsize),
+    VBox(
+      # Header
+      Heading(...),
+
+      # Filters
+      Left(...),
+      Left(ReplacePoint(Id(:query), query_description)),
+      VSpacing(0.3),
+
+      # Log entries
+      table,
+      VSpacing(0.3),
+
+      # Footer buttons
+      HBox(...)
+    )
+  )
+end
+
+def query_description
+  Label(@query.filters_description)
+end
+{% endhighlight %}
+<p>
+But besides changing the interface to reflect the changes, we also need to read
+the content of the widgets. The simplest example is the read_search method
+used to set the value of @search reading it from the corresponding input field.
+</p>
+{% highlight ruby %}
+def read_search
+  @search = Yast::UI.QueryWidget(Id(:search), :Value)
+  log.info "Search string set to '#{@search}'"
+end
+{% endhighlight %}
+<p>
+The QueryWidget function can be used to check the value of many different
+properties. The following method uses it for reading the value of all the
+relevant widgets in QueryDialog.
+</p>
+{% highlight ruby %}
+def query_from_widgets
+  boot = Yast::UI.QueryWidget(Id(:boot), :CurrentButton)
+  filters = { boot: boot }
+
+  QueryPresenter.additional_filters.each do |filter|
+    name = filter[:name]
+    # If the checkbox is checked
+    if Yast::UI.QueryWidget(Id(name), :Value)
+      # Read the widget...
+      value = Yast::UI.QueryWidget(Id(:"#{name}_value"), :Value)
+      # ...discarding empty values
+      filters[name] = value unless value.empty?
+    end
+  end
+
+  QueryPresenter.new(filters)
+end
+{% endhighlight %}
+<p>
+When the user pushes the &quot;change filter&quot; button, a new 
+QueryDialog is opened. When the user pushes the &quot;ok&quot; button, the
+dialog uses the function above to construct a new QueryPresenter object that is
+then returned and stored in the @query instance variable of the caller.
+</p>
+<p>
+The rest of the code in the proposed solution does not rely in any specific
+YaST feature and, thus, it should be pretty straightforward to read and
+understand.
+</p>
+<h3>Show your achievements to the world</h3>
+<p>
+We finally have a fully working YaST module. It's time to install it in our
+system and to release it for others to enjoy and test. Even whether you feel
+that your module is not yet ready for production usage, you must never forget
+the &quot;release early, release often&quot; principle. The
+<a href="step7.html">last step</a> of the tutorial will teach you everything
+you need to know in order to ship your YaST modules.
+</p>
