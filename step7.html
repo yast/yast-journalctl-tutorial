@@ -107,7 +107,7 @@ git checkout master
 <p>
 After running the command above you'll see a new file called RPMNAME with a
 self-explanatory content and goal. In addition, the Rakefile has been modified
-to include a new configuration option.
+to include some new configuration options.
 </p>
 {% highlight ruby %}
 require "yast/rake"
@@ -115,13 +115,16 @@ require "yast/rake"
 Yast::Tasks.configuration do |conf|
   # The package does not live in the official YaST:Head OBS project
   conf.obs_project = "home:an_obs_username"
+  # Default target for osc:build
+  conf.obs_target = "openSUSE_13.2"
 end
 {% endhighlight %}
 <p>
 That will cause the packaging tasks to always target the home project of the
-user an_obs_username in OBS. Edit the file and change the value to point to
-whatever project you like. Obviously, you need permission to create and update
-packages in the project.
+user an_obs_username in OBS trying to build a package for openSUSE 13.2. Edit
+the file and change the values to point to the distribution you are currently
+running and to whatever project you like. Obviously, you need permissions to
+create and update packages in the project.
 </p>
 <p>
 The rake tasks are designed to work on an existing OBS package, so you'll need
@@ -139,12 +142,15 @@ If it's the first time you use OBS, there is something else you need to do in
 your project. Configure the repositories it will create packages for. Visit the
 project's page again, click on &quot;repositories&quot; and then on &quot;add
 repositories&quot;. Add at least the corresponding repository for the system
-you are currently running (e.g. opensuse_13.2).
+you are currently running (e.g. openSUSE 13.2), matching the above value for
+obs_target.
 </p>
 <p>
 We are ready. Let's try again.
 </p>
 {% highlight bash %}
+git add Rakefile
+git commit -m "Adapted configuration in Rakefile"
 rake osc:build
 {% endhighlight %}
 <p>
@@ -167,7 +173,7 @@ aborted.
 again.
 </p>
 {% highlight ini %}
-trusted_prj=openSUSE:13.2 openSUSE:Factory
+trusted_prj=openSUSE:13.2
 {% endhighlight %}
 <p>
 After a successful run, you'll see a line with a package name like:
@@ -318,6 +324,8 @@ require "yast/rake"
 Yast::Tasks.configuration do |conf|
   # The package does not live in the official YaST:Head OBS project
   conf.obs_project = "you:already:changed_this"
+  # Default target for osc:build
+  conf.obs_target = "openSUSE_13.2"
   # Desktop files are just metadata
   conf.skip_license_check << /.*desktop$/
 end
