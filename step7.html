@@ -107,7 +107,9 @@ git checkout master
 <p>
 After running the command above you'll see a new file called RPMNAME with a
 self-explanatory content and goal. In addition, the Rakefile has been modified
-to include some new configuration options.
+to include some new configuration options, as explained in the
+<a href="http://www.rubydoc.info/github/openSUSE/packaging_tasks/">documentation
+of the packaging_rake_task gem</a>.
 </p>
 {% highlight ruby %}
 require "yast/rake"
@@ -336,7 +338,7 @@ That should be enough. Let's try again.
 {% highlight bash %}
 git add Rakefile
 git commit --amend --no-edit
-rake osc:commit
+rake osc:build
 {% endhighlight %}
 <p>
 Now everything should work straightforward and the the command above should
