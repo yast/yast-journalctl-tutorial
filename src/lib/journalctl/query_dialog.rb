@@ -43,7 +43,7 @@ module Journalctl
       return nil unless create_dialog
 
       begin
-        case Yast::UI.UserInput
+        case input = Yast::UI.UserInput
         when :cancel
           nil
         when :ok
