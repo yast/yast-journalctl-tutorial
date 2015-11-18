@@ -99,7 +99,7 @@ module Journalctl
           VSpacing(0.3),
 
           # Footer buttons
-          HBox(
+          ButtonBox(
             PushButton(Id(:cancel), Yast::Label.CancelButton),
             PushButton(Id(:ok), Yast::Label.OKButton)
           )
