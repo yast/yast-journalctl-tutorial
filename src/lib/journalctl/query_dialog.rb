@@ -43,7 +43,7 @@ module Journalctl
       return nil unless create_dialog
 
       begin
-        case Yast::UI.UserInput
+        case input = Yast::UI.UserInput
         when :cancel
           nil
         when :ok
@@ -99,7 +99,7 @@ module Journalctl
           VSpacing(0.3),
 
           # Footer buttons
-          HBox(
+          ButtonBox(
             PushButton(Id(:cancel), Yast::Label.CancelButton),
             PushButton(Id(:ok), Yast::Label.OKButton)
           )
