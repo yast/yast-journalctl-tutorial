@@ -95,7 +95,7 @@ module Journalctl
     # Simple event loop
     def event_loop
       loop do
-        case Yast::UI.UserInput
+        case input = Yast::UI.UserInput
         when :cancel
           # Break the loop
           break
