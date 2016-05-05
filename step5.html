@@ -47,7 +47,7 @@ git checkout package_spec
 <p>
 Now, &quot;package/yast2-journalctl.spec&quot; contains a basic package
 specification to be processed by the
-<a href="http://openbuildservice.org/">Open Build Service</a> (mainly a 
+<a href="http://openbuildservice.org/">Open Build Service</a> (mainly a
 <a href="http://www.rpm.org/">RPM</a> spec file). We will go back to packaging
 in the last step of the tutorial, but if you want to learn more about the Open
 Build Service and openSUSE packages creation, check the
@@ -98,6 +98,13 @@ To checkout some example unit tests for our models run the following command.
 </p>
 {% highlight bash %}
 git checkout unit_tests
+{% endhighlight %}
+<p>
+Before run the tests, we need to check if we have "ruby package" installed,
+if it is not installed, you can install it using zypper:
+</p>
+{% highlight bash %}
+zypper install ruby2.1-rubygem-rspec
 {% endhighlight %}
 <p>
 Under the &quot;test&quot; directory you will find the corresponding RSpec
