@@ -30,8 +30,14 @@ the result).
 rake -T
 {% endhighlight %}
 <p>
-Now, let's try some of the useful available tasks. First of all, three very
-simple but handy tasks to check our code.
+Now, let's try some of the useful available tasks. But first we need to install
+"rubygem-gettex".
+</p>
+{% highlight bash %}
+zypper install ruby2.1-rubygem-gettext
+{% endhighlight %}
+<p>
+Now we can use this three very simple but handy tasks to check our code.
 </p>
 {% highlight bash %}
 rake check:license
