@@ -30,34 +30,8 @@ the result).
 rake -T
 {% endhighlight %}
 <p>
-It failed!&hellip; and with a rather cryptic error message. But don't worry, it's
-easy to fix.
-</p>
-<p>
-Many of the tasks provided by yast-rake are related to packaging (to be precise,
-those packaging tasks are actually provided by the
-<a href="https://rubygems.org/gems/packaging_rake_tasks">packaging_rake_tasks</a>
-gem, required by yast-rake). For that reason you need a package specification to
-get the YaST rake tasks running. In your case, that is as easy as executing the
-following command.
-</p>
-{% highlight bash %}
-git checkout package_spec
-{% endhighlight %}
-<p>
-Now, &quot;package/yast2-journalctl.spec&quot; contains a basic package
-specification to be processed by the
-<a href="http://openbuildservice.org/">Open Build Service</a> (mainly a 
-<a href="http://www.rpm.org/">RPM</a> spec file). We will go back to packaging
-in the last step of the tutorial, but if you want to learn more about the Open
-Build Service and openSUSE packages creation, check the
-<a href="https://en.opensuse.org/Portal:Packaging">corresponding portal</a>
-in the openSUSE wiki.
-</p>
-<p>
-Now that &quot;rake -T&quot; finally works, let's try some of the useful
-available tasks. First of all, two very simple but handy tasks to check our
-code.
+Now, let's try some of the useful available tasks. First of all, three very
+simple but handy tasks to check our code.
 </p>
 {% highlight bash %}
 rake check:license
