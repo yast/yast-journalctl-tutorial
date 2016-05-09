@@ -64,20 +64,20 @@ checks for osc.
 * Done. Everything looks good.
 {% endhighlight %}
 <p>
-Then it runs the syntax check.
-</p>
-{% highlight text %}
-* Starting syntax check...
-* Done
-{% endhighlight %}
-<p>
-Afterwards, it ensures a license is present.
+Then it ensures a license is present.
 </p>
 {% highlight text %}
 Skipped files: [...]
 Copyright found in these files: [...]
 Copyright detected as not needed in these files: [...]
 All files have proper license reference.
+{% endhighlight %}
+<p>
+Afterwards, it runs the syntax check.
+</p>
+{% highlight text %}
+* Starting syntax check...
+* Done
 {% endhighlight %}
 <p>
 And finally it contacts with the openSUSE Build Service to start building the
