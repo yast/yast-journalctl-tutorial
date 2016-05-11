@@ -31,10 +31,11 @@ rake -T
 {% endhighlight %}
 <p>
 Now, let's try some of the useful available tasks. But first we need to install
-"rubygem-gettex".
+"rubygem-gettext".
 </p>
 {% highlight bash %}
-zypper install ruby2.1-rubygem-gettext
+ruby_version=$(ruby -e "puts RbConfig::CONFIG['ruby_version']")
+zypper install -C "rubygem(ruby:$ruby_version:gettext)"
 {% endhighlight %}
 <p>
 Now we can use this three very simple but handy tasks to check our code.
