@@ -30,11 +30,23 @@ it's the recommended development environment for YaST.
 Everything needed in order to set up the YaST development environment is
 detailed in the &quot;contributing&quot; section of the
 <a href="http://yast.github.io">YaST development home page</a>. In a recent
-openSUSE, it's as simple as:
+openSUSE, it's as simple as installing Git, the YaST development tools and the
+YaST-Rake gem. The first two are easily installed running:
 </p>
-
 {% highlight bash %}
-zypper install yast2-devtools ruby2.1-rubygem-yast-rake git-core
+zypper install git-core yast2-devtools
+{% endhighlight %}
+<p>
+In order to install Ruby gems for YaST development you should always install the
+package that corresponds to the version of Ruby that is used by default in your
+system. For example, in systems based in Ruby 2.1, the package name would be
+"ruby2.1-rubygem-yast-rake". The following set of commands will always install
+the right package by first guessing your Ruby version and storing it in a
+variable (make sure there are notspaces before and after "=").
+</p>
+{% highlight bash %}
+ruby_version=$(ruby -e "puts RbConfig::CONFIG['ruby_version']")
+zypper install -C "rubygem(ruby:$ruby_version:yast-rake)"
 {% endhighlight %}
 
 <h3>The method</h3>
