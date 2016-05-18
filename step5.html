@@ -81,6 +81,14 @@ To checkout some example unit tests for our models run the following command.
 git checkout unit_tests
 {% endhighlight %}
 <p>
+Before running the tests, make sure you have RSpec installed. You can install
+it using zypper:
+</p>
+{% highlight bash %}
+ruby_version=$(ruby -e "puts RbConfig::CONFIG['ruby_version']")
+zypper install -C "rubygem(ruby:$ruby_version:rspec)"
+{% endhighlight %}
+<p>
 Under the &quot;test&quot; directory you will find the corresponding RSpec
 unit tests for Entry and Query. Those tests are just a simple example and
 are not completely exhaustive. Feel free to implement any additional check.
