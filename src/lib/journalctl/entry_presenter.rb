@@ -50,5 +50,11 @@ module Journalctl
     def formatted_time
       timestamp.strftime(TIME_FORMAT)
     end
+
+    # Message string
+    def message
+      # bnc#941655 was caused by this field being an array in journalctl's json
+      entry.message.to_s
+    end
   end
 end
