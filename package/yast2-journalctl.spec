@@ -16,7 +16,7 @@
 #
 
 Name:           yast2-journalctl
-Version:        0.1.0
+Version:        0.1.1
 Release:        0
 BuildArch:      noarch
 
@@ -31,9 +31,9 @@ BuildRequires:  yast2-ruby-bindings
 BuildRequires:  yast2-devtools
 BuildRequires:  yast2
 #for install task
-BuildRequires:  rubygem(yast-rake)
+BuildRequires:  rubygem(%{rb_default_ruby_abi}:yast-rake)
 # for tests
-BuildRequires:  rubygem(rspec)
+BuildRequires:  rubygem(%{rb_default_ruby_abi}:rspec)
 
 Group:          System/YaST
 License:        GPL-2.0 or GPL-3.0
