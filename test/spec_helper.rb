@@ -19,6 +19,7 @@
 # Set the paths
 ENV["Y2DIR"] = File.expand_path("../../src", __FILE__)
 DATA_PATH = File.join(File.expand_path(File.dirname(__FILE__)), "data")
+SRC_PATH = File.expand_path("../src", __dir__)
 
 require "yast"
 
@@ -44,4 +45,24 @@ end
 def json_for_entry
   file = File.join(DATA_PATH, "entry.json")
   File.open(file) {|f| f.read }
+end
+
+# configure RSpec
+RSpec.configure do |config|
+  config.mock_with :rspec do |c|
+    # verify that the mocked methods actually exist
+    # https://relishapp.com/rspec/rspec-mocks/v/3-0/docs/verifying-doubles/partial-doubles
+    c.verify_partial_doubles = true
+  end
+end
+
+# enable code coverage
+if ENV["COVERAGE"]
+  require "simplecov"
+  SimpleCov.start do
+    add_filter "/test/"
+  end
+
+  # track all ruby files under src/lib
+  SimpleCov.track_files("#{SRC_PATH}/lib/**/*.rb")
 end
