@@ -1,4 +1,10 @@
 -------------------------------------------------------------------
+Tue Mar 10 09:00:28 UTC 2026 - Michal Filka <mfilka@suse.com>
+
+- jsc#PED-14507
+  - Removed reference to update-desktop-files from spec file 
+  - 0.1.2
+-------------------------------------------------------------------
 Thu Aug 22 16:23:36 CEST 2019 - schubi@suse.de
 
 - Using rb_default_ruby_abi tag in the spec file in order to
