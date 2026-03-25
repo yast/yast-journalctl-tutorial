@@ -16,7 +16,7 @@
 #
 
 Name:           yast2-journalctl
-Version:        0.1.1
+Version:        0.1.2
 Release:        0
 BuildArch:      noarch
 
@@ -26,7 +26,6 @@ Source0:        %{name}-%{version}.tar.bz2
 Requires:       yast2
 Requires:       yast2-ruby-bindings
 
-BuildRequires:  update-desktop-files
 BuildRequires:  yast2-ruby-bindings
 BuildRequires:  yast2-devtools
 BuildRequires:  yast2
